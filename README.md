@@ -38,4 +38,5 @@ Baron-Cohen, S., Wheelwright, S., Skinner, R., Martin, J., & Clubley, E. (2001).
 Oreg, S. (2003). Resistance to change : Developing an individual differences measure. 
     *Journal of Applied Psychology, 88(4)*, 680‑693. https://doi.org/10.1037/0021-9010.88.4.680
 
-
+R Core Team (2020). R: A language and environment for statistical computing. *R Foundation for Statistical Computing*,
+     Vienna, Austria. URL https://www.R-project.org/.
