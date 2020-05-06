@@ -1,0 +1,381 @@
+---
+title: "Statistical analysis"
+output:
+  html_notebook: default
+  html_document:
+    df_print: paged
+    toc: yes
+  pdf_document:
+    latex_engine: lualatex
+    toc: yes
+---
+
+<P style="page-break-before: always">
+
+```{r}
+path_loc = "D:/Onedrive/SNCF/Analyses/sncf_memoire_analysis/results/"
+setwd(path_loc)
+rm(path_loc)
+```
+\
+\
+
+# I. **Introduction**
+\
+\
+Le but de ce fichier est d'effectuer toutes les analyses nécessaires pour valider l'échelle de **flexibilité cognitive générale** (**Code R** : **nflex** = new flexibility). Il est composé de l'analyse descriptive de l'échantillon (âge, sexe...), des items de l'échelle de la **nflex**,l'analyse factorielle exploratoire (**polychoric correlation** et **principal axis factor analysis**) et les analyses factorielles confirmatoires pour les autres échelles (**polychoric correlations** and **diagonal weighted least square factor analysis**). 
+\
+\
+\
+
+# II. **Setup**
+## 1. **Chargement des librairies**
+
+```{r echo=T, message=FALSE, warning=FALSE, include=T}
+wants <- c("psych","reshape","reshape2","car","carData","moments","tidyverse","stringr","plotly","readxl","apaTables","ggthemes","GGally","grid","gridExtra","data.table","corrplot","esquisse","Hmisc","psychTools", "stargazer","polycor","jtools","lavaan","lavaanPlot")
+has <- wants %in% rownames(installed.packages())
+if(any(!has)) install.packages(wants[!has])
+invisible(lapply(wants, library, character.only = TRUE))
+rm(has, wants)
+```
+\
+
+## 2. **Chargement de la DB**
+```{r}
+path = "D:/Onedrive/SNCF/Analyses/sncf_memoire_analysis/results/DATA.csv"
+data = read.csv2(file = path)
+rm(path)
+head(data)
+```
+Note. *La base de donnée contient 48 variables et 418 observations. 4 variables sont des char (sujet, sexe, situation professionnelle et langue maternelle) et 44 sont des num*
+\
+\
+
+## 3. **Nettoyage de la DB (na..)**
+
+L'objectif ici est de **supprimer automatiquement** les sujets ayant des données manquantes sur l'une des échelles, ou si le niveau de français est trop bas (afin d'éviter tout problème de compréhension des énoncés), de normaliser le nom des variables en *lowercase*, et d'inverser les items inversés dans l'échelle. Ici, on obtient 4 dataframes : 
+* les données brutes **data**
+* les données contenant uniquement la flexibilité **nflex**
+* les donnnées brutes moins les sujets avec des NA sur les échelles **data_cleaned_scale**
+* les données brutes moins tous les NA **data_cleaned_wsct**
+* les données contenant la flexibilité avec les items inversés dans le bon sens **nflex_inv**
+
+
+```{r}
+# Met les noms en minuscule
+data = setnames(data, tolower(names(data)))
+
+# Initie les copies de dataframe
+data_cleaned_scale = data %>%drop_na(c(7:42))
+data_cleaned_wsct = data %>% drop_na(.)
+nflex = data[,c(21:30)]
+nflex_inv = nflex
+
+# Inversion des items pour toutes les échelles
+data_cleaned_scale$cognitive_rigidity_4 = 7-data_cleaned_scale$cognitive_rigidity_1
+data_cleaned_scale$att_switch_1 = 5-data_cleaned_scale$att_switch_1 
+data_cleaned_scale$att_switch_2 = 5-data_cleaned_scale$att_switch_2
+data_cleaned_scale$att_switch_4 = 5-data_cleaned_scale$att_switch_4
+data_cleaned_scale$att_switch_4 = 5-data_cleaned_scale$att_switch_9 
+data_cleaned_scale$att_switch_4 = 5-data_cleaned_scale$att_switch_10 
+data_cleaned_scale$cfs_2 = 7-data_cleaned_scale$cfs_2
+data_cleaned_scale$cfs_3 = 7-data_cleaned_scale$cfs_3
+data_cleaned_scale$cfs_5 = 7-data_cleaned_scale$cfs_5
+data_cleaned_scale$cfs_10 = 7-data_cleaned_scale$cfs_10
+nflex_inv$nflex_3 = 7-nflex_inv$nflex_3
+nflex_inv$nflex_5 = 7-nflex_inv$nflex_5
+nflex_inv$nflex_7 = 7-nflex_inv$nflex_7
+nflex_inv$nflex_9 = 7-nflex_inv$nflex_9
+```
+
+**Note**. *Utilisation de nflex_inv pour l'analyse de la structure de l'échelle de flexibilité (corrélation, afe). Lorsqu'on fera les corrélation avec les autres échelles, on utilisera data_cleaned_scale. On utilisera data_cleaned_wsct pour la corrélation avec la tâche de flexibilité mentale.* 
+\
+\
+
+# III. **Statistiques descriptives**
+## 1. **Echantillon**
+```{r}
+# Affichage du tableau descriptif
+stargazer(as.data.frame(data), type="text")
+```
+
+\
+<center> Présentation de la distribution de l'âge des participants en fonction du sexe : </center>
+```{r}
+# Histogramme Age des participants
+## Pour l'age groupé par sexe
+data_ggplot = data
+data_ggplot$situation.professionnelle.avant.le.confinement = factor(data_ggplot$situation.professionnelle.avant.le.confinement, levels=c("Etudiant", "Travailleur", "Sans emploi"))
+data_ggplot$sexe = factor(data_ggplot$sexe, levels=c("Femme", "Homme", "Autre"))
+ggplot(data=data_ggplot, aes(x=age, fill=sexe)) + 
+  geom_histogram(color="#e9ecef", alpha=.9, position ="identity",binwidth = 2) + 
+  scale_fill_manual(values=c("#404080", "#b8c2cc", "#69b3a2")) +
+  theme_apa() +
+  theme(legend.position = "right") +
+  labs(fill="Sexe") +
+  scale_x_continuous(name="Age", breaks = seq(0, 85, 10)) +
+  ylab("N")
+
+## Pour l'age groupé par la situation
+ggplot(data=data_ggplot, aes(x=age, fill=situation.professionnelle.avant.le.confinement))+
+  geom_histogram(color="#e9ecef", alpha=.9, position ="identity",binwidth = 2) + 
+  scale_fill_manual(values=c("#404080", "#b8c2cc", "#69b3a2")) +
+  theme_apa() +
+  theme(legend.position = "right") +
+  ylab("N") +
+  labs(fill="Situation") +
+  scale_x_continuous(name="Age", breaks = seq(0, 85, 10))
+```
+
+## 2. **Echelle de Flexibilité cognitive générale**
+### a. *Histogrammes*
+ \
+**La base de donnée utilisée pour la suite des analyses est celle avec les items inversés remis dans le bon sens!**
+
+Montre l'histogramme de chaques question de l'échelle de flexibilité cognitive générale. Le but ici est d'observer le type de distribution de chaque item afin de déterminer les items ayant treop de *valeurs extrêmes*, ou une distribution avec un skewness et kurtosis trop biaisés. 
+
+```{r}
+# Affichage des histogramme des items de la flexibilité
+ggplot(gather(nflex_inv), aes(x=value)) + 
+  geom_histogram(stat = "count") + facet_wrap(~key, scales = 'free_x') +
+  scale_color_grey() +
+  theme_apa() +
+  theme(legend.position = "bottom") +
+  xlab("Items") + ylab("N")
+```
+
+Ici, les **items 1, 4, 6 et 10** semblent avoir un nombre important de valeurs extrêmes ou un effet plafond. Il serait peut être recommandé de les supprimer (Garin, 2014 ; Benzina, 2019), et on regarde si les valeurs extrêmes (1 et 6) dépassent 20%, auquel cas, l'item est supprimé. On peut également se baser sur les valeurs du coefficient d'asymétrie et d'applatissement. \
+\
+Pour rappel, le coefficient d'asymétrie (skewness) est une mesure d'ordre 3 de la tendance centrale d'un échantillon. La mesure d'ordre 1 correspond à l'écart-type et la mesure d'ordre 2 est la variance. La skewness peut être mesurée ainsi :
+$$\gamma_{X} = E\left[\left(\frac{X - \mu}{\sigma}\right)^3\right] $$ \
+\
+Le coefficient d'applatissement (kurtosis) permet de rendre compte de potentiels "outliers" dans le jeu de donnée et qui est une mesure d'ordre 4 de la tendance centrale d'un échantillon : 
+$$Kurt[X] = E\left[\left(\frac{X - \mu}{\sigma}\right)^4\right] $$ \
+\
+
+```{r warning=FALSE}
+item = colnames(nflex_inv)
+kurt_skew = as.tibble(round(skewness(nflex_inv), 2)) %>% 
+  mutate(kurtosis = round(kurtosis(nflex_inv), 2)) %>% 
+  cbind(item) %>% 
+  rename(skewness = value)
+rm(item)
+kurt_skew[, c(3,1,2)]
+```
+\
+\
+*Réferences*
+
+Benzina, N. (2019). Évaluation de la flexibilité cognitive dans le trouble obsessionnel compulsif : Étude de la validité de deux auto-questionnaires comparés à une tâche expérimentale. Université de Rouen.
+
+
+
+Le tableau suivant indique les items qui ont plus de 20% de données dans les valeurs extrêmes (1 ou 6). N'ayant pas encore regardé le critère de sélection, et la corrélation polychorique prenant en compte les valeurs asymétriques, je ne pense pas que les données soient à supprimer. 
+
+```{r}
+frequencies  = data.frame(item = character(10), upper = numeric(10), lower = numeric(10))
+for(i in c(1,2,3,4,5,6,7,8,9,10)){
+  upper = length(which(nflex_inv[i]==6))/387
+  lower = length(which(nflex_inv[i]==1))/387
+  frequencies$item[i] = paste0("nflex_", as.character(i))
+  frequencies$upper[i] = upper
+  frequencies$lower[i] = lower
+}
+frequencies
+rm(upper, lower, i)
+```
+\
+
+### b. *Summary*
+\
+\
+Les **items 1, 4, 6 et 10** sont supprimés car trop de valeurs extrêmes ou effet plafond. Statistiques descriptive de l'echelle sans ces items. 
+```{r}
+stargazer(as.data.frame(nflex_inv[,-c(1,4,6,10)]), type="text")
+```
+\
+
+### c. *correlation* 
+\
+\
+Ici, la corrélation entre les items (ainsi que la *p-value*) sont représentées. La **corrélation utilisée est polychorique**, car elle est adaptée à des mesures ordinales et asymétriques. Plus exactement, la corrélation polychorique est une mesure de l'association entre des variables ordinales.
+On smooth la corrélation pour éviter les problèmes (Debelak et Tran, 2016)
+\
+*Références*
+
+Debelak, R., & Tran, U. S. (2016). Comparing the Effects of Different Smoothing Algorithms on the Assessment of Dimensionality of Ordered Categorical Items with Parallel Analysis. *PloS one, 11(2)*, e0148143. https://doi.org/10.1371/journal.pone.0148143
+
+D.L. Knol and JMF ten Berge (1989) Least squares approximation of an improper correlation matrix by a proper one. *Psychometrika, 54*, 53-61.
+
+```{r message=FALSE, warning=FALSE}
+poly = polychoric(nflex_inv[,-c(1,4,6,10)])
+poly_nflex = poly$rho
+poly_nflex = cor.smooth(poly_nflex, eig.tol=10^-12)
+correlation = poly_nflex
+correlation[upper.tri(correlation)] <- NA
+stargazer(correlation, title="Matrice de corrélation polychorique", type="text")
+
+rm(poly)
+
+```
+\
+
+# **IV. Analyse factorielle epxloratoire**
+## *1. Test des conditions de l'AFE*
+\
+\
+<center> **Analyse du test KMO** </center>
+$$MSA_{nflex} = .70 \space (MSA_{min} = .70)$$ \
+
+<center> **Test de sphéricité de Bartlett** </center>
+$$\chi^2(45) = 233.77,\space p < .001.$$
+<center> *L'analyse factorielle est appropriée.* </center> \
+\
+<center>**Det(cor(A))** </center>
+$$det(A) = 0.54,\space matrice\space inversible$$ 
+\
+Le but de ces tests est de **vérifier qu'il est possible de faire une analyse factorielle exploratoire**. Le **test de sphéricité de Bartlett**, par exemple, compare la matrice de nos données à des matrices générées par des échantillons de nos données pour vérifier que ces données ont bien des liens entre elles (et donc qu'il existe bien un ou des facteurs latent derrière). Le **KMO** (test de kaiser-meyer-Ollin de la mesure de l'adéquation de l'échantillon) permet de mesurer la proporiton de variance parmis les variables qui pourrait contenir de la variance commune. \
+\
+**Rappel** : *variance commune* (variance que partage un item avec un ou plusieurs autres items ==> facteur latent possible), *variance spécifique* (variance de l'item qui lui est propre et qui n'est pas partagée) et *variance résiduelle* (erreur associée à l'item) \
+**Rappel 2** : Parce qu'on traite des variables ordinales, il faut indiquer au test de Bartlett et au test KMO le tableau de **corrélation polychorique**, et non le dataset *nflex* directement. Sinon, il calcule le KMO en se basant sur la **matrice de corrélation de pearson** !
+**Rappel 3** : le MSA augmente au fur et à mesure que la taille de l'échantillon augmente, la corrélation moyenne augmente, le nombre de variables augmente et le nombre de facteurs diminues. Le MSA utilisé est le MSA modifié de Kaiser et Rice (1974).
+\
+
+*Références* 
+
+Kaiser, H. F., & Rice, J. (1974). Little Jiffy, Mark Iv. *Educational and Psychological Measurement, 34(1)*, 111‑117. https://doi.org/10.1177/001316447403400115
+
+Voir pour Bartlett
+Pour le déterminer, c'est inhérant aux méthodes d'analyse (pas de matrice identitaire, sans quoi, on ne peut pas calculer les matrices inverses)
+
+Tinsley, H. E. A., & Tinsley, D. J. (1987). Uses of factor analysis in counseling psychology research. *Journal of Counseling Psychology, 34(4)*, 414‑424. https://doi.org/0022-0167.34.4.414
+
+\
+\
+```{r, include=T}
+cortest.bartlett(R = poly_nflex, n = 387)
+KMO(nflex_inv)
+det(poly_nflex)
+```
+\
+\
+
+## *2. Analyse factorielle polychorique*
+
+Il faut d'abord déterminer combiend de facteur notre dataset semble contenir. POur ce faire, on utilise la **parallel analysis with polychoric correlation** car nos données sont des échelles de Likert et dévie de la normalité : 
+
+\
+\
+*Référence*
+
+Buja, A., & Eyuboglu, N. (1992). Remarks on Parallel Analysis. *Multivariate Behavioral Research, 27(4)*, 509-540. http://doi.org/10.1207/s15327906mbr2704_2
+
+Devlin, S. J., Gnanadesikan, R., & Kettenring, J. R. (1981). Robust estimation of dispersion matrices and principal components. *Journal of the American Statistical Association, 76*, 354-362. http://doi.org/10.1080/01621459.1981.10477654
+
+ten Berge, J. M. F., & Kiers, H. A. L. (1991). A numerical approach to the approximate and the exact minimum rank of a covariance matrix. *Psychometrika, 56(2)*, 309-315. http://doi.org/10.1007/BF02294464
+
+Timmerman, M. E., & Lorenzo-Seva, U. (2011). Dimensionality assessment of ordered polytomous items with parallel analysis. *Psychological Methods, 16(2)*, 209-220. http://doi.org/10.1037/a0023353
+
+Ford, J. Kevin, Robert C. MacCALLUM, et Marianne Tait. « The Application of Exploratory Factor Analysis in Applied Psychology: A Critical Review and Analysis ». *Personnel Psychology 39, nᵒ 2* (juin 1986): 291‑314. https://doi.org/10.1111/j.1744-6570.1986.tb00583.x. (critère du 0.40) \
+
+Garrido, L. E., Abad, F. J., & Ponsoda, V. (2013). A new look at Horn’s parallel analysis with ordinal variables. *Psychological Methods, 18(4)*, 454‑474. PubMed. https://doi.org/10.1037/a0030005 \
+
+Tinsley, H. E. A., & Tinsley, D. J. (1987). Uses of factor analysis in counseling psychology research. *Journal of Counseling Psychology, 34(4)*, 414‑424. https://doi.org/0022-0167.34.4.414
+\
+\
+On utilise ensuite une analyse factorielle polychorique en utilisant un least squares algorithme (spécifiquement, une principal axis factor analysis), avec le nombre de facteurs indiqués par l'analyse parallèle, et une rotation oblimin car on s'attend à avoir des facteurs corrélés. On utilise un facteur loadings de .40 (Peterson, 2000)
+\
+\
+*Référence*
+
+Ford, J. K., MacCALLUM, R. C., & Tait, M. (1986). The application of exploratory factor analysis in applied psychology : A critical review and analysis. *Personnel Psychology, 39(2)*, 291‑314. https://doi.org/10.1111/j.1744-6570.1986.tb00583.x \
+
+Lee, S.-Y., Poon, W.-Y., & Bentler, P. M. (1995). A two-stage estimation of structural equation models with continuous and polytomous variables. *British Journal of Mathematical and Statistical Psychology, 48(2)*, 339‑358. https://doi.org/10.1111/j.2044-8317.1995.tb01067.x \
+
+Baglin, J. (2014). Improving Your Exploratory Factor Analysis for Ordinal Data : A Demonstration Using FACTOR. *Practical Assessment, Research, and Evaluation*, 19(5), 1‑16. https://doi.org/10.7275/dsep-4220 \
+
+Peterson, R. A. (2000). A Meta-Analysis of Variance Accounted for and Factor Loadings in Exploratory Factor Analysis. *Marketing Letters, 11(3)*, 261‑275.\
+
+Tinsley, H. E. A., & Tinsley, D. J. (1987). Uses of factor analysis in counseling psychology research. *Journal of Counseling Psychology, 34(4)*, 414‑424. https://doi.org/0022-0167.34.4.414\
+
+
+
+```{r}
+# Déterminer le nombre de facteurs 
+pa = fa.parallel(nflex_inv[,-c(1,4,6,10)], fm="pa", fa="fa", main = "Scree Plot", n.iter = 500, sim=T, se.bars = T)
+
+#Analyse factorielle exploratoire
+fa = fa(nflex_inv[,-c(1,4,6,10)], cor="poly", nfactors = pa$nfact, fm="pa", rotate="varimax", residuals = T, correct=T)
+fa.diagram(fa, sort = T, cut = .4, errors = T, labels = T, digits = 2)
+fa.plot(fa) #plot the loadings of each factors
+fa
+
+# Used to check if a general factor exist regrouping the other factor
+bassA = bassAckward(nflex_inv[,-c(1,4,6,10)], nfactors = c(1,3), fm = "pa", cor = "poly")
+
+```
+\
+Les indices d'ajustement du modèle de l'afe permettent de rendre compte de la précision du modèle, d'un risque d'over-fitting, et de l'ajustement des données sur le nombre de facteurs trouvés. On retrouve le **test du $\chi²$** (une valeur proche de 0 indique un meilleur ajustement), l'**erreur quadratique moyenne d'approximation** (varie entre 0 et 1), le **résidu quadratique moyen** (rms) et **résidu quadratique moyen normalisé** (SRMR) et **le Tucker Lewis index** (TLI) : 
+
+
+*Références* :
+
+Sharma, S., Mukherjee, S., Kumar, A., & Dillon, W. R. (2005). A simulation study to investigate the use of cutoff values for assessing model fit in covariance structure models. *Journal of Business Research, 58(7)*, 935‑943. https://doi.org/10.1016/j.jbusres.2003.10.007\
+
+Bagozzi, R. R., & Yi, Y. (1988). On the evaluation of structural equation models. *Journal of the Academy of Marketing Science, 16(1)*, 74‑94. https://doi.org/0092-0703/88 / 1601-0074\
+
+Hu, L., & Bentler, P. M. (1999). Cutoff criteria for fit indexes in covariance structure analysis : Conventional criteria versus new alternatives. *Structural Equation Modeling: A Multidisciplinary Journal, 6(1)*, 1‑55. https://doi.org/10.1080/10705519909540118\
+
+Schermelleh-Engel, K., Moosbrugger, H., & Müller, H. (2003). Evaluating the Fit of Structural Equation Models : Tests of Significance and Descriptive Goodness-of-Fit Measures. *Methods of Psychological Research, 8(2)*, 23‑74.
+
+```{r}
+omega(m=nflex_inv[,-c(1,4,6,10)], poly=T, nfactors = 3, fm = "pa", sl=F, rotation="varimax")
+psych::alpha(nflex_inv[,-c(1,4,6,10)])
+```
+
+
+Le coefficient Omega Hierarical correspond  à une estimation de la saturation général d'un facteur dans une échelle.Le coefficient Asymptotic correspond au $\lambda^6$ de Guttman (alias $\alpha$ de Cronbach)
+
+
+*Références* 
+
+Revelle and Zinbarg (2009)
+
+Zinbarg, R. E., Revelle, W., Yovel, I., & Li, W. (2005). Cronbach’s α, Revelle’s β, and Mcdonald’s ωH : Their relations with each other and two alternative conceptualizations of reliability. *Psychometrika, 70(1)*, 123‑133. https://doi.org/10.1007/s11336-003-0974-7
+
+Trizano-Hermosilla, I., & Alvarado, J. M. (2016). Best Alternatives to Cronbach’s Alpha Reliability in Realistic Conditions : Congeneric and Asymmetrical Measurements. *Frontiers in Psychology, 7(769)*. https://doi.org/10.3389/fpsyg.2016.00769
+
+
+# **V. Analyses confirmatoires des échelles** 
+```{r}
+model_cfs = "flexibilite =~ cfs_1+cfs_2+cfs_3+cfs_4+cfs_5+cfs_6+cfs_7+cfs_8+cfs_9+cfs_10+cfs_11+cfs_12"
+
+model_aq = "attention =~ att_switch_1+att_switch_2+att_switch_3+att_switch_4+att_switch_5+att_switch_6+att_switch_7+att_switch_8+att_switch_9+att_switch_10"
+
+model_rtc = "rigidite =~ cognitive_rigidity_1+cognitive_rigidity_2+cognitive_rigidity_3+cognitive_rigidity_4"
+```
+
+
+```{r}
+cfa_cfs = cfa(model_cfs, data=data_cleaned_scale[,31:42], estimator="DWLS", ordered = c("cfs_1","cfs_2","cfs_3","cfs_4","cfs_5","cfs_6","cfs_7","cfs_8","cfs_9","cfs_10","cfs_11","cfs_12"))
+summary(cfa_cfs, fit.measures=T)
+psych::alpha(data_cleaned_scale[,31:42])
+```
+
+
+```{r}
+cfa_aq = cfa(model_aq, data=data_cleaned_scale[,11:20], estimator="DWLS", ordered = c("att_switch_1","att_switch_2","att_switch_3","att_switch_4","att_switch_5","att_switch_6","att_switch_7","att_switch_8","att_switch_9","att_switch_10"))
+summary(cfa_aq, fit.measures=T)
+psych::alpha(data_cleaned_scale[,11:20])
+```
+
+
+```{r}
+cfa_rtc = cfa(model_rtc, data=data_cleaned_scale[,7:10], estimator="DWLS", ordered=c("cognitive_rigidity_1","cognitive_rigidity_2","cognitive_rigidity_3","cognitive_rigidity_4"))
+summary(cfa_rtc, fit.measures=T)
+psych::alpha(data_cleaned_scale[,7:10])
+```
+
+
+
+
