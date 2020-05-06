@@ -20,6 +20,8 @@ The dataset contained in this folder is setup as follow :
 6.Response to the Resistance to Change Scale's Subset named Cognitive Rigidity (Oreg, 2003)
 * Code R : cognitive_rigidity_X
 
+7.Response to the General Cognitive Scale (Analyzed ; Weiss & Chene, 2020)
+* Code R : cognitive_rigidity_X
 \
 \
 *Références:*
