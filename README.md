@@ -24,6 +24,8 @@ The dataset contained in this folder is setup as follow :
 * Code R : nflex_X
 \
 \
+\
+\
 *Références:*
 
 Martin, M. M., & Rubin, R. B. (1995). A New Measure of Cognitive Flexibility. 
