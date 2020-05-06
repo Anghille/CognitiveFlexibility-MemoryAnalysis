@@ -3,11 +3,10 @@ R markdown used for the data analysis of the Master 2 memory and internship
 
 
 The dataset contained in this folder is setup as follow : 
+* A row = an observation
+* A column = a variable
 
-A row = an observation
-A column = a variable
-
-
+\
 **There is multiple variables :**\
 1.Age,\
 2.Sexe,\
@@ -21,6 +20,8 @@ A column = a variable
 6.Response to the Resistance to Change Scale's Subset named Cognitive Rigidity (Oreg, 2003)
 * Code R : cognitive_rigidity_X
 
+\
+\
 *Références:*
 
 Martin, M. M., & Rubin, R. B. (1995). A New Measure of Cognitive Flexibility. 
