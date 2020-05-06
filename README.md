@@ -21,7 +21,7 @@ The dataset contained in this folder is setup as follow :
 * Code R : cognitive_rigidity_X
 
 7.Response to the General Cognitive Scale (Analyzed ; Weiss & Chene, 2020)
-* Code R : cognitive_rigidity_X
+* Code R : nflex_X
 \
 \
 *Références:*
