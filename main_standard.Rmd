@@ -14,7 +14,7 @@ output:
 <P style="page-break-before: always">
 
 ```{r}
-path_loc = "D:/YOUR_PATH/"
+path_loc = "/YOUR_PATH/" #exemple : "C:/users/you_name/desktop/"
 setwd(path_loc)
 options(scipen=999)
 rm(path_loc)
