@@ -13,7 +13,7 @@ output:
 <P style="page-break-before: always">
 
 ```{r}
-path_loc = "D:/Onedrive/SNCF/Analyses/sncf_memoire_analysis/results/"
+path_loc = "D:/YOUR_PATH/"
 setwd(path_loc)
 options(scipen=999)
 rm(path_loc)
@@ -52,7 +52,7 @@ rm(has, wants)
 ## 2. **Loading database**
 ```{r}
 # Change path were your dataset is downloaded
-path = "D:/Onedrive/SNCF/Analyses/sncf_memoire_analysis/results/DATA.csv"
+path = "YOUR_PATH/data/DATA_SAMPLED.csv"
 data = read.csv2(file = path)
 rm(path)
 head(data)
