@@ -25,7 +25,7 @@ The dataset contained in this folder is setup as follow :
 
 7.Response to the General Cognitive Scale (Analyzed ; Weiss & Chene, 2020)
 * Code R : nflex_X
-\
+
 8.And more
 \
 \
