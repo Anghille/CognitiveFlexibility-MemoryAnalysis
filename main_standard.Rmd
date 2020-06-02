@@ -1,5 +1,6 @@
 ---
 title: "Statistical analysis"
+Author: Anghille
 output:
   html_notebook: default
   html_document:
