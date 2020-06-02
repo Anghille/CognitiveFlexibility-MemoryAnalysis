@@ -5,7 +5,7 @@ output:
     vertical_layout: scroll
     social: menu
     source: embed
-author: Pierre-Louis Weiss
+author: Anghille
 params: 
  data: ""
  data_scale: ""
