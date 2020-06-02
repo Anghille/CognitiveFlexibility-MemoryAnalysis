@@ -8,9 +8,9 @@ To use HTML file, you just need to download them and execute them on any browser
 The dataset contained in this folder is setup as follow : 
 * A row = an observation
 * A column = a variable
-
 \
-**There is multiple variables :**\
+\
+**DataSet Variable :**\
 1.Age,\
 2.Sexe,\
 3.Professionnal situation,\
@@ -26,6 +26,7 @@ The dataset contained in this folder is setup as follow :
 7.Response to the General Cognitive Scale (Analyzed ; Weiss & Chene, 2020)
 * Code R : nflex_X
 \
+8.And more
 \
 \
 \
