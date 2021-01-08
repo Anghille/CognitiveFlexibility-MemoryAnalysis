@@ -1,4 +1,5 @@
-# Flexibility_memory_analysis
+# CognitiveFlexibility-MemoryAnalysis
+
 R markdown used for the data analysis of the Master 2 memory and internship
 
 Main_standard.Rmd is the main file where all the analysis are executed. If your goal is to review or use the script, i recommand you to download the html_standard file to get a nice output of that code. 
